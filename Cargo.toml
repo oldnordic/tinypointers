@@ -3,6 +3,12 @@ name = "tinypointers"
 version = "0.1.0"
 edition = "2021"
 authors = ["Luiz Spies"]
+license = "GPL-3.0-only"
+description = "Compact pointer compression for u64 integer keys - Rust implementation of Tiny Pointers (Bender et al., 2021)"
+repository = "https://github.com/oldnordic/tinypointers"
+readme = "README.md"
+keywords = ["hash", "pointer", "compression", "tiny-pointers", "funnel-hashing"]
+categories = ["data-structures", "algorithms", "memory-management"]
 
 [dependencies]
 ahash = "0.8"

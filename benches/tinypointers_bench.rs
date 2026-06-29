@@ -7,18 +7,20 @@
 // - perf stat -e cycles,instructions,cache-references,cache-misses,L1-dcache-load-misses cargo bench
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use hashbrown::HashMap;
 use nohash_hasher::BuildNoHashHasher;
-use std::collections::HashMap;
 use std::num::NonZeroU32;
+use std::collections::HashMap as StdHashMap;
 use tinypointers::TinyPtrMap;
 
-/// Benchmark map insert operations - throughput comparison
+/// Benchmark map insert operations - throughput comparison across multiple hash crates
 fn bench_insert_throughput(c: &mut Criterion) {
     let mut group = c.benchmark_group("insert_throughput");
 
     for size in [1024, 2048, 4096, 8192].iter() {
         group.throughput(Throughput::Elements(*size as u64));
 
+        // Tinypointers
         group.bench_with_input(
             BenchmarkId::from_parameter("tinypointers"),
             size,
@@ -32,6 +34,7 @@ fn bench_insert_throughput(c: &mut Criterion) {
             },
         );
 
+        // hashbrown (HashMap)
         group.bench_with_input(
             BenchmarkId::from_parameter("hashbrown"),
             size,
@@ -45,9 +48,24 @@ fn bench_insert_throughput(c: &mut Criterion) {
             },
         );
 
+        // std::collections::HashMap (RandomState)
+        group.bench_with_input(
+            BenchmarkId::from_parameter("std_hashmap"),
+            size,
+            |b, &size| {
+                let mut map: StdHashMap<u64, NonZeroU32> = StdHashMap::with_capacity(size);
+                b.iter(|| {
+                    let key: u64 = black_box(rand::random());
+                    let handle = NonZeroU32::MIN;
+                    black_box(map.insert(key, handle));
+                });
+            },
+        );
+
+        // nohash-hasher (integer keys, no hashing)
         group.bench_with_input(BenchmarkId::from_parameter("nohash"), size, |b, &size| {
-            let mut map: HashMap<u64, NonZeroU32, BuildNoHashHasher<u64>> =
-                HashMap::with_capacity_and_hasher(size, BuildNoHashHasher::default());
+            let mut map: StdHashMap<u64, NonZeroU32, BuildNoHashHasher<u64>> =
+                StdHashMap::with_capacity_and_hasher(size, BuildNoHashHasher::default());
             b.iter(|| {
                 let key: u64 = black_box(rand::random());
                 let handle = NonZeroU32::MIN;
@@ -59,11 +77,12 @@ fn bench_insert_throughput(c: &mut Criterion) {
     group.finish();
 }
 
-/// Benchmark sequential vs random access patterns
+/// Benchmark sequential vs random access patterns across multiple hash crates
 fn bench_access_patterns(c: &mut Criterion) {
     let mut group = c.benchmark_group("access_patterns");
 
     for pattern in ["sequential", "random"].iter() {
+        // Tinypointers
         group.bench_function(format!("tinypointers_{}", pattern), |b| {
             let mut map = TinyPtrMap::new(2048);
             let mut base_key: u64 = rand::random();
@@ -81,6 +100,7 @@ fn bench_access_patterns(c: &mut Criterion) {
             });
         });
 
+        // hashbrown
         group.bench_function(format!("hashbrown_{}", pattern), |b| {
             let mut map: HashMap<u64, NonZeroU32> = HashMap::with_capacity(2048);
             let mut base_key: u64 = rand::random();
@@ -98,9 +118,28 @@ fn bench_access_patterns(c: &mut Criterion) {
             });
         });
 
+        // std::collections::HashMap
+        group.bench_function(format!("std_hashmap_{}", pattern), |b| {
+            let mut map: StdHashMap<u64, NonZeroU32> = StdHashMap::with_capacity(2048);
+            let mut base_key: u64 = rand::random();
+
+            b.iter(|| {
+                let key = if *pattern == "sequential" {
+                    base_key = base_key.wrapping_add(1);
+                    base_key
+                } else {
+                    rand::random()
+                };
+
+                let handle = NonZeroU32::MIN;
+                black_box(map.insert(key, handle));
+            });
+        });
+
+        // nohash-hasher
         group.bench_function(format!("nohash_{}", pattern), |b| {
-            let mut map: HashMap<u64, NonZeroU32, BuildNoHashHasher<u64>> =
-                HashMap::with_capacity_and_hasher(2048, BuildNoHashHasher::default());
+            let mut map: StdHashMap<u64, NonZeroU32, BuildNoHashHasher<u64>> =
+                StdHashMap::with_capacity_and_hasher(2048, BuildNoHashHasher::default());
             let mut base_key: u64 = rand::random();
 
             b.iter(|| {
@@ -120,13 +159,14 @@ fn bench_access_patterns(c: &mut Criterion) {
     group.finish();
 }
 
-/// Benchmark lookup-heavy workload (high hit-rate LRU simulation)
+/// Benchmark lookup-heavy workload (high hit-rate LRU simulation) across multiple hash crates
 fn bench_lookup_heavy(c: &mut Criterion) {
     let mut group = c.benchmark_group("lookup_heavy");
 
     for size in [1024, 4096, 16384].iter() {
         group.throughput(Throughput::Elements(*size as u64));
 
+        // Tinypointers
         group.bench_with_input(
             BenchmarkId::from_parameter("tinypointers"),
             size,
@@ -145,6 +185,7 @@ fn bench_lookup_heavy(c: &mut Criterion) {
             },
         );
 
+        // hashbrown
         group.bench_with_input(
             BenchmarkId::from_parameter("hashbrown"),
             size,
@@ -163,9 +204,29 @@ fn bench_lookup_heavy(c: &mut Criterion) {
             },
         );
 
+        // std::collections::HashMap
+        group.bench_with_input(
+            BenchmarkId::from_parameter("std_hashmap"),
+            size,
+            |b, &size| {
+                let mut map: StdHashMap<u64, NonZeroU32> = StdHashMap::with_capacity(size);
+                let keys: Vec<u64> = (0..size).map(|_| rand::random()).collect();
+
+                for &key in &keys {
+                    map.insert(key, NonZeroU32::MIN);
+                }
+
+                b.iter(|| {
+                    let key = black_box(keys[rand::random::<usize>() % keys.len()]);
+                    black_box(map.get(&key));
+                });
+            },
+        );
+
+        // nohash-hasher
         group.bench_with_input(BenchmarkId::from_parameter("nohash"), size, |b, &size| {
-            let mut map: HashMap<u64, NonZeroU32, BuildNoHashHasher<u64>> =
-                HashMap::with_capacity_and_hasher(size, BuildNoHashHasher::default());
+            let mut map: StdHashMap<u64, NonZeroU32, BuildNoHashHasher<u64>> =
+                StdHashMap::with_capacity_and_hasher(size, BuildNoHashHasher::default());
             let keys: Vec<u64> = (0..size).map(|_| rand::random()).collect();
 
             for &key in &keys {
