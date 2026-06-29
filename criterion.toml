@@ -1,0 +1,25 @@
+# Criterion benchmark configuration
+
+[[bench]]
+name = "tinypointers_bench"
+harness = false
+
+[baseline]
+"tinypointers" = "baseline"
+
+# Output configuration
+[output]
+uppercase_themes = true
+
+# Plotting configuration
+[plots]
+# Enable individual plots
+individual = true
+# Enable comparison plots
+comparison = true
+
+# Time measurement thresholds
+[time-thresholds]
+warm-up = 1.0
+measurement = 5.0
+sample_size = 100

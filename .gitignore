@@ -1,0 +1,32 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Agent files (non-user-facing)
+.claude/
+CLAUDE.md
+AGENTS.md
+API_SPEC.md
+IMPLEMENTATION_STATUS.md
+PHASE*_COMPLETE.md
+TODO.md
+
+# Documentation drafts (keep published versions)
+*.draft.md
+
+# Benchmark data
+criterion/
+benches/*.csv
+
+# Fuzzing corpus
+fuzz/corpus
+fuzz/artifacts

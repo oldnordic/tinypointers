@@ -1,0 +1,31 @@
+[package]
+name = "tinypointers"
+version = "0.1.0"
+edition = "2021"
+authors = ["Luiz Spies"]
+
+[dependencies]
+ahash = "0.8"
+fxhash = "0.2"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+pprof = { version = "0.13", features = ["criterion", "flamegraph"] }
+rand = "0.8"
+rand_chacha = "0.3"
+nohash-hasher = "0.2"
+hashbrown = "0.14"
+ahash = "0.8"
+fxhash = "0.2"
+
+[[bench]]
+name = "tinypointers_bench"
+harness = false
+
+[profile.release]
+debug = true
+lto = "fat"
+codegen-units = 1
+
+[profile.bench]
+inherits = "release"
