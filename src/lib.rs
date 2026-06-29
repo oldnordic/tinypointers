@@ -192,11 +192,14 @@ impl Container {
             };
 
             let level = &mut self.levels[level_idx];
-            level.count += 1;
 
             match level.try_allocate(key) {
                 Ok(slot) => {
                     self.item_count += 1;
+                    // Increment counts for all levels <= level_idx
+                    for j in 0..=level_idx {
+                        self.levels[j].count += 1;
+                    }
                     return Ok(TinyPointer::LoadBalancer {
                         level: level_idx as u8,
                         slot: slot as u16,
@@ -209,6 +212,10 @@ impl Container {
                         match overflow.allocate(key) {
                             Ok(slot) => {
                                 self.item_count += 1;
+                                // Increment counts for all levels <= level_idx
+                                for j in 0..=level_idx {
+                                    self.levels[j].count += 1;
+                                }
                                 let level_from_back = (self.levels.len() - 1 - level_idx) as u8;
                                 return Ok(TinyPointer::Overflow {
                                     level_from_back,
@@ -283,7 +290,6 @@ impl Container {
                     *slot_ref = None;
                 }
             }
-            level_obj.count = level_obj.count.saturating_sub(1);
         }
     }
 
@@ -298,15 +304,28 @@ impl Container {
     }
 
     fn free(&mut self, key: u64, ptr: &TinyPointer) {
-        match ptr {
+        let stored_level = match ptr {
             TinyPointer::LoadBalancer { level, slot } => {
                 self.free_level_slot(key, *level, *slot);
+                *level as usize
             }
-            TinyPointer::Overflow { level_from_back, slot } => {
+            TinyPointer::Overflow {
+                level_from_back,
+                slot,
+            } => {
                 let level_idx = self.levels.len() - 1 - *level_from_back as usize;
                 self.free_overflow_slot(key, level_idx, *slot);
+                level_idx
+            }
+        };
+
+        // Decrement count for all levels <= stored_level
+        for j in 0..=stored_level {
+            if let Some(level_obj) = self.levels.get_mut(j) {
+                level_obj.count = level_obj.count.saturating_sub(1);
             }
         }
+
         self.item_count = self.item_count.saturating_sub(1);
     }
 
@@ -354,7 +373,10 @@ impl<K> fmt::Debug for TinyPtrMap<K> {
         let item_count: usize = self.containers.iter().map(|c| c.item_count()).sum();
         f.debug_struct("TinyPtrMap")
             .field("containers", &self.containers.len())
-            .field("total_capacity", &self.containers.iter().map(|c| c.capacity()).sum::<usize>())
+            .field(
+                "total_capacity",
+                &self.containers.iter().map(|c| c.capacity()).sum::<usize>(),
+            )
             .field("item_count", &item_count)
             .field("arena_size", &self.arena.len())
             .field("reverse_index_size", &self.key_to_ptr.len())
@@ -470,10 +492,7 @@ impl TinyPtrMap<u64> {
     /// Formula: num_containers * container_capacity
     /// Includes overflow array slots in calculation
     pub fn capacity(&self) -> usize {
-        self.containers
-            .iter()
-            .map(|c| c.capacity())
-            .sum()
+        self.containers.iter().map(|c| c.capacity()).sum()
     }
 
     /// Clears all entries while preserving allocated structure
@@ -849,5 +868,46 @@ mod tests {
 
         // Capacity should match parameter
         assert!(map.capacity() >= 100);
+    }
+
+    #[test]
+    fn test_container_level_count_leak() {
+        let config = ContainerConfig {
+            s: 64,
+            b: 4,
+            base_hash_seed: 0,
+        };
+        let mut container = Container::new(&config);
+        let mut keys_and_ptrs = Vec::new();
+
+        // Insert items until we allocate at level >= 1
+        let mut allocated_at_level_1_or_more = false;
+        for i in 0..64 {
+            let key = i as u64;
+            if let Ok(ptr) = container.try_allocate(key) {
+                match ptr {
+                    TinyPointer::LoadBalancer { level, .. } if level >= 1 => {
+                        allocated_at_level_1_or_more = true;
+                    }
+                    TinyPointer::Overflow { .. } => {
+                        allocated_at_level_1_or_more = true;
+                    }
+                    _ => {}
+                }
+                keys_and_ptrs.push((key, ptr));
+            }
+        }
+
+        assert!(allocated_at_level_1_or_more, "Should have allocated at level >= 1");
+
+        // Now free all items
+        for (key, ptr) in keys_and_ptrs {
+            container.free(key, &ptr);
+        }
+
+        // Verify all level counts are 0
+        for (i, level) in container.levels.iter().enumerate() {
+            assert_eq!(level.count, 0, "Level {} count is leaked: {}", i, level.count);
+        }
     }
 }

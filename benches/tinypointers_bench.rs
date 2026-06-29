@@ -9,8 +9,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use hashbrown::HashMap;
 use nohash_hasher::BuildNoHashHasher;
-use std::num::NonZeroU32;
 use std::collections::HashMap as StdHashMap;
+use std::num::NonZeroU32;
 use tinypointers::TinyPtrMap;
 
 /// Benchmark map insert operations - throughput comparison across multiple hash crates
