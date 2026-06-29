@@ -183,11 +183,28 @@ cargo bench             # Criterion benchmarks
 - ✅ Zero compiler warnings
 - ✅ Zero clippy warnings
 - ✅ Mathematical framework documented
+- ✅ User-facing documentation complete
 
-**Future Enhancements:**
-- ⏳ Bit-packed encoding (true Θ(log k) bit pointers)
-- ⏳ Multi-level funnel cascade (full Funnel Hashing architecture)
-- ⏳ Pathformer integration (trace replay validation)
+## Optional Enhancements
+
+**Bit-Packed Encoding (Feature: `bit-packed`)**
+- Target: Θ(log k) bits per handle (vs 32 bits)
+- Space savings: 4-8× reduction
+- Status: Research complete, implementation plan ready
+- See: [BIT_PACKED_RESEARCH.md](https://github.com/oldnordic/tinypointers/blob/main/docs/BIT_PACKED_RESEARCH.md)
+- Plan: [BIT_PACKED_PLAN.md](https://github.com/oldnordic/tinypointers/blob/main/docs/BIT_PACKED_PLAN.md)
+
+**Funnel Cascade (Feature: `funnel-cascade`)**
+- Target: log n levels with dynamic bucket sizing
+- Benefit: O(1) operations at 95%+ load factor
+- Status: Research complete, implementation plan ready
+- See: [FUNNEL_CASCADE_RESEARCH.md](https://github.com/oldnordic/tinypointers/blob/main/docs/FUNNEL_CASCADE_RESEARCH.md)
+- Plan: [FUNNEL_CASCADE_PLAN.md](https://github.com/oldnordic/tinypointers/blob/main/docs/FUNNEL_CASCADE_PLAN.md)
+- Reference: [opthash implementation](https://github.com/aaron-ang/opthash-rs)
+
+**Combined Feature:**
+- `--features full` enables both optimizations
+- Estimated effort: 3 weeks total (1 week bit-packed + 2 weeks funnel)
 
 ## References
 

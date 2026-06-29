@@ -31,6 +31,40 @@
 - Serialization (runtime structure)
 - Concurrent access (single-threaded workload)
 
+## Optional Enhancements (Future Work)
+
+### Bit-Packed Encoding
+
+**Goal:** Implement Θ(log k) bit pointer compression
+
+**Current:** 32-bit handles (NonZeroU32)
+**Target:** 4-8 bit handles via bit manipulation
+
+**Implementation:**
+- Feature flag: `bit-packed`
+- Approach: Custom bit encoding (no external deps)
+- Space savings: 4-8× reduction
+- Estimated effort: 1 week
+
+**Research:** [docs/BIT_PACKED_RESEARCH.md](https://github.com/oldnordic/tinypointers/blob/main/docs/BIT_PACKED_RESEARCH.md)
+**Plan:** [docs/BIT_PACKED_PLAN.md](https://github.com/oldnordic/tinypointers/blob/main/docs/BIT_PACKED_PLAN.md)
+
+### Funnel Cascade
+
+**Goal:** Implement multi-level Funnel Hashing cascade
+
+**Current:** 2-level hierarchy
+**Target:** log n levels with dynamic bucket sizing
+
+**Implementation:**
+- Feature flag: `funnel-cascade`
+- Approach: Based on [opthash](https://github.com/aaron-ang/opthash-rs) patterns
+- Benefit: O(1) operations at 95%+ load factor
+- Estimated effort: 2 weeks
+
+**Research:** [docs/FUNNEL_CASCADE_RESEARCH.md](https://github.com/oldnordic/tinypointers/blob/main/docs/FUNNEL_CASCADE_RESEARCH.md)
+**Plan:** [docs/FUNNEL_CASCADE_PLAN.md](https://github.com/oldnordic/tinypointers/blob/main/docs/FUNNEL_CASCADE_PLAN.md)
+
 **Documentation:**
 - See `API_SPEC.md` for detailed API requirements
 - See `TODO.md` for implementation task breakdown

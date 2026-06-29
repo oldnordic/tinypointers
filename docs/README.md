@@ -22,6 +22,12 @@ This folder contains comprehensive documentation of the mathematical foundations
 - **IMPLEMENTATION_STATUS.md** - Phase 1 completion summary
 - **PHASE1_COMPLETE.md** - Detailed Phase 1 verification report
 
+### For Future Enhancements
+- **BIT_PACKED_RESEARCH.md** — Research on Θ(log k) bit handle encoding
+- **BIT_PACKED_PLAN.md** — Implementation plan for bit-packed handles
+- **FUNNEL_CASCADE_RESEARCH.md** — Research on multi-level Funnel Hashing
+- **FUNNEL_CASCADE_PLAN.md** — Implementation plan for cascade architecture
+
 ## Document Summaries
 
 ### MATHEMATICAL_FRAMEWORK.md
