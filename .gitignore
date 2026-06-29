@@ -30,3 +30,6 @@ benches/*.csv
 # Fuzzing corpus
 fuzz/corpus
 fuzz/artifacts
+
+# Generated symbol indices (grounded coding workflow)
+.magellan/
